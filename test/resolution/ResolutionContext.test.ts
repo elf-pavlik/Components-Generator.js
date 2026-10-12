@@ -58,10 +58,42 @@ describe('ResolutionContext', () => {
     });
   });
 
+  describe('fileExists', () => {
+    it('Should be true for an existing file', async() => {
+      await expect(resolutionContext.fileExists(`${__dirname}/../data/file.d.ts`)).resolves.toBe(true);
+    });
+
+    it('Should be false for a non-existing file', async() => {
+      await expect(resolutionContext.fileExists(`${__dirname}/../data/file-not-exist.d.ts`)).resolves.toBe(false);
+    });
+  });
+
+  describe('resolveTypeScriptFilePath', () => {
+    it('Should resolve a declaration file', async() => {
+      await expect(resolutionContext.resolveTypeScriptFilePath(`${__dirname}/../data/file`)).resolves
+        .toBe(`${__dirname}/../data/file.d.ts`);
+    });
+
+    it('Should resolve a TypeScript source file', async() => {
+      await expect(resolutionContext.resolveTypeScriptFilePath(`${__dirname}/../data/filesource`)).resolves
+        .toBe(`${__dirname}/../data/filesource.ts`);
+    });
+
+    it('Should resolve a non-existing file to a declaration file', async() => {
+      await expect(resolutionContext.resolveTypeScriptFilePath(`${__dirname}/../data/file-not-exist`)).resolves
+        .toBe(`${__dirname}/../data/file-not-exist.d.ts`);
+    });
+  });
+
   describe('getTypeScriptFileContent', () => {
     it('Should read file contents', async() => {
       await expect(resolutionContext.getTypeScriptFileContent(`${__dirname}/../data/file`)).resolves
         .toBe(`export class MyClass {}\n`);
+    });
+
+    it('Should read TypeScript source file contents', async() => {
+      await expect(resolutionContext.getTypeScriptFileContent(`${__dirname}/../data/filesource`)).resolves
+        .toContain(`export class MySourceClass {`);
     });
   });
 
@@ -91,6 +123,43 @@ describe('ResolutionContext', () => {
           comments: [],
           sourceType: 'module',
           type: 'Program',
+        });
+    });
+
+    it('Should parse a TypeScript source file into the shape of a declaration file', async() => {
+      await expect(resolutionContext.parseTypescriptFile(`${__dirname}/../data/filesource`)).resolves
+        .toMatchObject({
+          body: [
+            {
+              declaration: {
+                body: {
+                  body: [
+                    {
+                      type: 'PropertyDefinition',
+                      key: { name: 'a' },
+                      accessibility: 'private',
+                      readonly: true,
+                      typeAnnotation: undefined,
+                    },
+                    {
+                      type: 'MethodDefinition',
+                      kind: 'constructor',
+                      value: {
+                        params: [
+                          {
+                            type: 'Identifier',
+                            name: 'a',
+                            typeAnnotation: { typeAnnotation: { type: 'TSStringKeyword' }},
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+                id: { name: 'MySourceClass' },
+              },
+            },
+          ],
         });
     });
 
@@ -168,9 +237,32 @@ describe('ResolutionContext', () => {
       expect(resolutionContext.resolvePackageIndexInner(req, 'asynciterator', ''))
         .toEqual(normalizeFilePath('/root/abc.d.ts'));
     });
+
+    it('Should handle package.json with types field pointing to a TypeScript source file', async() => {
+      const req: any = () => ({
+        types: 'src/abc.ts',
+      });
+      req.resolve = () => '/root/a/';
+      expect(resolutionContext.resolvePackageIndexInner(req, 'asynciterator', ''))
+        .toEqual(normalizeFilePath('/root/src/abc.ts'));
+    });
+
+    it('Should handle package.json with implicit types field pointing to a TypeScript source file', async() => {
+      const req: any = () => ({
+        main: 'src/abc.ts',
+      });
+      req.resolve = () => '/root/a/';
+      expect(resolutionContext.resolvePackageIndexInner(req, 'asynciterator', ''))
+        .toEqual(normalizeFilePath('/root/src/abc.ts'));
+    });
   });
 
   describe('resolveTypesPath', () => {
+    it('Should resolve a types path of a TypeScript source file', async() => {
+      await expect(resolutionContext.resolveTypesPath(`${__dirname}/../data/filesource`)).resolves
+        .toBe(`${__dirname}/../data/filesource`);
+    });
+
     it('Should resolve a types path of a directory', async() => {
       await expect(resolutionContext.resolveTypesPath(`${__dirname}/../data/directory`)).resolves
         .toEqual(normalizeFilePath(`${__dirname}/../data/directory/index`));

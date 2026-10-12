@@ -119,6 +119,40 @@ describe('PackageMetadataLoader', () => {
       });
     });
 
+    it('should return with all required entries, but using types pointing to a TypeScript source file', async() => {
+      resolutionContext.contentsOverrides = {
+        [normalizeFilePath('/package.json')]: `{
+  "name": "@solid/community-server",
+  "version": "1.2.3",
+  "lsd:module": "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server",
+  "lsd:components": "components/components.jsonld",
+  "lsd:contexts": {
+    "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^1.0.0/components/context.jsonld": "components/context.jsonld"
+  },
+  "lsd:importPaths": {
+    "https://example.org/bundles/npm/@solid/community-server/^1.0.0/components/": "components/",
+    "https://example.org/bundles/npm/@solid/community-server/^1.0.0/config/": "config/"
+  },
+  "types": "./src/index.ts"
+}`,
+      };
+      await expect(loader.load('/')).resolves.toEqual({
+        componentsPath: normalizeFilePath('/components/components.jsonld'),
+        contexts: {
+          'https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^1.0.0/components/context.jsonld':
+            'components/context.jsonld',
+        },
+        importPaths: {
+          'https://example.org/bundles/npm/@solid/community-server/^1.0.0/components/': 'components/',
+          'https://example.org/bundles/npm/@solid/community-server/^1.0.0/config/': 'config/',
+        },
+        moduleIri: 'https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server',
+        name: '@solid/community-server',
+        version: '1.2.3',
+        typesPath: normalizeFilePath('/src/index'),
+      });
+    });
+
     it('should return with all required entries with lsd:module true', async() => {
       resolutionContext.contentsOverrides = {
         [normalizeFilePath('/package.json')]: `{

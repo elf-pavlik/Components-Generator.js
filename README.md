@@ -114,6 +114,22 @@ Usage:
 **Note:** This generator will read `.d.ts` files,
 so it is important that you invoke the TypeScript compiler (`tsc`) _before_ using this tool.
 
+Alternatively, the generator can read TypeScript source (`.ts`) files directly, without invoking `tsc`.
+It falls back to a `.ts` file whenever no `.d.ts` file exists,
+so point the source directory (`-s`) and the `types` field in your `package.json` to your source files:
+```json
+{
+  "types": "./src/index.ts"
+}
+```
+```bash
+$ componentsjs-generator -s src
+```
+Source files are interpreted like the declaration files that `tsc` would emit.
+Since no type checker is used, field and parameter types that are not annotated
+are only inferred from simple initializers (literals, `new` expressions and `as` assertions),
+and fall back to `any` otherwise.
+
 ### Configuration files
 
 While options passed to the CLI tool will always take precedence,

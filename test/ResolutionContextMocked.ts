@@ -1,7 +1,6 @@
 /* istanbul ignore file */
 import type { AST, TSESTreeOptions } from '@typescript-eslint/typescript-estree';
 import { ResolutionContext } from '../lib/resolution/ResolutionContext';
-import { normalizeFilePath } from '../lib/util/PathUtil';
 
 export class ResolutionContextMocked extends ResolutionContext {
   public contentsOverrides: Record<string, string | AST<TSESTreeOptions>>;
@@ -16,13 +15,8 @@ export class ResolutionContextMocked extends ResolutionContext {
     this.packageNameIndexOverrides = packageNameIndexOverrides;
   }
 
-  public resolveTypesPath(filePath: string): Promise<string> {
-    return new Promise((resolve) => {
-      if (!(`${filePath}.d.ts` in this.contentsOverrides)) {
-        return resolve(normalizeFilePath(`${filePath}/index`));
-      }
-      resolve(filePath);
-    });
+  public async fileExists(filePath: string): Promise<boolean> {
+    return filePath in this.contentsOverrides;
   }
 
   public async getFileContent(filePath: string): Promise<string> {
@@ -44,12 +38,7 @@ export class ResolutionContextMocked extends ResolutionContext {
   }
 
   public async parseTypescriptFile(filePath: string): Promise<AST<TSESTreeOptions>> {
-    const indexContent = await this.getTypeScriptFileContent(filePath);
-    try {
-      return this.parseTypescriptContents(indexContent);
-    } catch (error: unknown) {
-      throw new Error(`Could not parse file ${filePath}, invalid syntax at line ${(<any> error).lineNumber}, column ${(<any> error).column}. Message: ${(<Error> error).message}`);
-    }
+    return this.parseTypescriptFileUncached(filePath);
   }
 
   public resolvePackageIndex(packageName: string, currentFilePath: string): string {

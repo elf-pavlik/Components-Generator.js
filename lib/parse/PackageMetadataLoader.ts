@@ -69,6 +69,8 @@ export class PackageMetadataLoader {
     let typesPath = joinFilePath(packageRootDirectory, packageJson.types || packageJson.typings);
     if (typesPath.endsWith('.d.ts')) {
       typesPath = typesPath.slice(0, -5);
+    } else if (typesPath.endsWith('.ts')) {
+      typesPath = typesPath.slice(0, -3);
     }
 
     // Determine prefixes
