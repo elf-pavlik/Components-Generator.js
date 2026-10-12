@@ -33,7 +33,6 @@
     "build": "tsc",
     "test": "jest --maxWorkers=50%",
     "lint": "eslint . --cache",
-    "prepare": "husky && yarn build",
     "version": "manual-git-changelog onversion"
   },
   "dependencies": {
